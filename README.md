@@ -1,4 +1,4 @@
-# 🦷 DentiSalud — Sistema de Gestión de Citas Odontológicas
+# DentiSalud — Sistema de Gestión de Citas Odontológicas
 
 **Base de datos relacional completa para la gestión de agendas, turnos y pacientes de un centro odontológico.**
 
@@ -7,7 +7,7 @@
 
 ---
 
-## 📋 Descripción
+## Descripción
 
 DentiSalud es un sistema de base de datos diseñado para resolver un problema real del sector salud: la gestión eficiente de citas, agendas de profesionales y datos de pacientes en un centro odontológico.
 
@@ -21,7 +21,7 @@ El proyecto cubre el ciclo completo de diseño e implementación de una base de 
 
 ---
 
-## 🏗️ Arquitectura y tecnologías
+## Arquitectura y tecnologías
 
 | Tecnología | Uso |
 |---|---|
@@ -34,7 +34,7 @@ El proyecto cubre el ciclo completo de diseño e implementación de una base de 
 
 ---
 
-## 🗂️ Entidades del modelo
+## Entidades del modelo
 
 El sistema gestiona **8 entidades principales** relacionadas entre sí:
 
@@ -53,27 +53,27 @@ El sistema gestiona **8 entidades principales** relacionadas entre sí:
 
 ## ⚙️ Objetos SQL implementados
 
-### 👁️ Vistas
+### Vistas
 - **`vista_citas_atendidas`** — Lista de citas por paciente ordenadas cronológicamente, con profesional asignado
 - **`vista_horarios_inactivos`** — Detección de horarios sin actividad dentro de una agenda
 - **`vista_atenciones_medico`** — Historial de atenciones por profesional ordenado por fecha
 
-### 🔧 Funciones
+### Funciones
 - **`f_citas_atendidas_por_servicio`** — Cantidad de citas en un rango de fechas para un servicio dado; retorna mensaje de error si no hay resultados
 - **`f_citas_atendidas_paciente`** — Contador de atenciones por paciente para control de historial clínico
 - **`f_horarios_disponibles_agendas`** — Listado de horarios activos para una agenda; alerta si no hay disponibilidad
 
-### 🗄️ Stored Procedures
+### Stored Procedures
 - **`sp_crear_nuevo_paciente`** — Alta de paciente con validación de datos
 - **`sp_cambiar_estado_cita`** — Actualización de estado de turno con control de valores inválidos
 - **`sp_buscar_paciente`** — Búsqueda por número de documento con manejo de errores
 
-### ⚡ Triggers
+### Triggers
 - **`registro_cambios_agenda`** — Auditoría automática de cambios de estado en agendas (activa/inactiva), con registro de fecha y estado anterior
 - **`validar_fecha_nacimiento`** — Validación de que la fecha de nacimiento no supere la fecha actual al insertar un paciente
 - **`evitar_eliminar_pacientes_con_citas`** — Integridad referencial: bloquea la eliminación de pacientes con citas asociadas
 
-### 👥 Roles y usuarios
+### Roles y usuarios
 
 | Usuario | Rol | Permisos |
 |---|---|---|
@@ -83,7 +83,7 @@ El sistema gestiona **8 entidades principales** relacionadas entre sí:
 
 ---
 
-## 🚀 Cómo ejecutar el proyecto
+## Cómo ejecutar el proyecto
 
 ### Requisitos previos
 - Docker Desktop instalado
