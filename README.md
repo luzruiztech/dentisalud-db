@@ -109,7 +109,7 @@ make clean-db      # Limpiar la base de datos
 
 ---
 
-## 📁 Estructura del repositorio
+## Estructura del repositorio
 
 ```
 ├── structure/          # Scripts DDL: creación de tablas y relaciones
@@ -123,7 +123,7 @@ make clean-db      # Limpiar la base de datos
 
 ---
 
-## 💡 Contexto y decisiones de diseño
+## Contexto y decisiones de diseño
 
 Este proyecto fue diseñado pensando en los desafíos reales de un sistema de salud:
 
