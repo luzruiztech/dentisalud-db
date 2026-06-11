@@ -1,5 +1,9 @@
-USE gestion_citas_dentisalud;
 
+/* Funcion: f_citas_atendidas_por_servicio, esta funcion indicas la cantidad de citas atendidas en un rango de fechas para un determinado servicio, Si no existen citas para el rango y servicio ingresado, 
+   esta funcion retornara un mensaje de error indicando que hay 0 citas para ese conjunto de datos.
+   Las tablas interviniestes son: citas, horarios, agendas y servicios.
+ */
+ 
 DROP FUNCTION  IF EXISTS f_citas_atendidas_por_servicio;
 DELIMITER //
 CREATE FUNCTION f_citas_atendidas_por_servicio(
@@ -30,6 +34,13 @@ BEGIN
 END//
 DELIMITER ;
 
+-- NOTA:Tambien robar con el servicio Odontologia General con 0 citas atendidas...
+-- SELECT f_citas_atendidas_por_servicio('2024-03-13', '2024-04-18', 'Estetica dental'); 
+
+/* Funcion: f_citas_atendidas_paciente, esta funcion indicas la cantidad de veces que ha sido 'Atendido' un paciente y asi controlar sus atenciones, como tambien cuando este no ha sido atendido, 
+   Las tablas interviniestes son: pacientes, y cias.
+ */
+ 
  DROP FUNCTION  IF EXISTS f_citas_atendidas_paciente; 
  DELIMITER //
 CREATE FUNCTION f_citas_atendidas_paciente(
@@ -57,6 +68,13 @@ BEGIN
     END IF;
 END//
 DELIMITER ;
+
+-- SELECT f_citas_atendidas_paciente(1);
+
+/* Funcion: f_horarios_disponibles_agendas, esta funcion muestra los horarios disponibles o activos dentro de una desterminada agenda, 
+en caso de que no existan horarios activos, retorna la informacion de que no existen horarios para esa agenda.
+Las tablas interviniestes son: horarios, y cias.
+ */
 
 DROP FUNCTION IF EXISTS f_horarios_disponibles_agendas;
 DELIMITER //
@@ -92,3 +110,10 @@ BEGIN
     END IF;
 END//
 DELIMITER ;
+
+-- SELECT f_horarios_disponibles_agendas (5);
+
+
+
+
+

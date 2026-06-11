@@ -1,0 +1,7 @@
+# Variables de entorno con credenciales — NUNCA subir
+.env
+
+# Copias y archivos temporales
+*_original.sql
+*_clean.sql
+*.bak

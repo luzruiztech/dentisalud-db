@@ -8,7 +8,6 @@ HOST=127.0.0.1
 PORT=3306
 PASSWORD=${ROOT_PASSWORD}
 DATABASE=${DATABASE_NAME}
-CURDATE := $(shell date +%Y%m%d)
 
 DOCKER_COMPOSE_FILE=./docker-compose.yml
 
@@ -30,6 +29,7 @@ up:
 	@echo "Waiting for MySQL to be ready..."
 	bash wait_docker.sh
 
+
 	@echo "Create the import and run de script"
 	docker exec -it mysql mysql -u root -p$(PASSWORD) -e "source $(DATABASE_CREATION);"
 	docker exec -it mysql mysql -u root -p$(PASSWORD) --local-infile=1 -e "source $(DATABASE_POPULATION)"
@@ -46,14 +46,10 @@ test-db:
 	@TABLES=$$(docker exec -it $(SERVICE_NAME) mysql -u root -p$(PASSWORD) -N -B -e "USE $(DATABASE_NAME); SHOW TABLES;"); \
 	for TABLE in $$TABLES; do \
 		echo "Table: $$TABLE"; \
-		docker exec -it $(SERVICE_NAME) mysql -u root -p$(PASSWORD) -e "USE $(DATABASE_NAME); SELECT * FROM $$TABLE LIMIT 5;"; \
+		docker exec -it $(SERVICE_NAME) mysql -u root -p$(PASSWORD) -N -B -e "USE $(DATABASE_NAME); SELECT * FROM $$TABLE LIMIT 5;"; \
 		echo "----------------------------------------------"; \
 	done
 
-backup-db:
-	@echo "Back up database by structure and data"
-	# Dump MySQL database to a file
-	docker exec -it $(SERVICE_NAME) mysqldump -u root -p$(PASSWORD) $(DATABASE) > ./backups/$(BACKUP_DIR_FILES)/$(DATABASE)-$(CURDATE).sql
 
 access-db:
 	@echo "Access to db-client"

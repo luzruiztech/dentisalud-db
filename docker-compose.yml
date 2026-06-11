@@ -10,4 +10,4 @@ services:
       - ./objects:/objects
       - ./structure:/structure
     ports:
-      - "3306:3306"
+      - "3307:3306"

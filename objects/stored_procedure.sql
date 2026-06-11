@@ -1,5 +1,7 @@
-USE gestion_citas_dentisalud;
 
+/* Stored Procedure: sp_crear_nuevo_paciente, el siguiente sp permite crear nuevos pacientes, ingresando los datos del mismo.
+   Las tablas interviniestes son: pacientes.
+ */
 DROP PROCEDURE IF EXISTS sp_crear_nuevo_paciente;
 DELIMITER //
 CREATE PROCEDURE sp_crear_nuevo_paciente(
@@ -17,8 +19,8 @@ CREATE PROCEDURE sp_crear_nuevo_paciente(
     IN p_nro_credencial VARCHAR(100)
 )
 BEGIN
-
-    INSERT INTO gestion_citas_dentisalud.pacientes (
+    -- Insertar un nuevo paciente
+    INSERT INTO Gestion_citas_dentisalud.pacientes (
         apellido_pac, nombre_pac, nacionalidad_pac, tipo_doc_pac, 
         nro_documento, fecha_nac, sexo_pac, email_pac, telf, 
         obra_social, plan, nro_credencial
@@ -30,6 +32,11 @@ BEGIN
 END //
 DELIMITER ;
 
+-- CALL sp_crear_nuevo_paciente('Ruiz', 'Laura', 'Argentina', 'DNI', '6455123', '1989-02-02', 'Femenino', 'ruiz@gmail.com', '35446282', 'Nva social Osde', 'Plan Nuevo 233', '19734343');
+
+/* Stored Procedure: sp_cambiar_estado_cita, el siguiente permite cambiar el estado de una cita y si se ingresa un balor incorrecto o nullo, este genera un error indicando que es un valor incorrecto.
+   Las tablas interviniestes son: pacientes.
+ */
 DROP PROCEDURE IF EXISTS sp_cambiar_estado_cita;
 DELIMITER //
 CREATE PROCEDURE sp_cambiar_estado_cita(
@@ -40,7 +47,7 @@ BEGIN
     DECLARE error_msg VARCHAR(200);
     
     SELECT COUNT(*) INTO error_msg
-    FROM gestion_citas_dentisalud.citas
+    FROM Gestion_citas_dentisalud.citas
     WHERE id_cita_pk = p_id_cita;
     
     IF error_msg = 0 THEN
@@ -51,11 +58,17 @@ BEGIN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: <<INGRESE DATOS VALIDOS>>.';
     END IF;
     
-    UPDATE gestion_citas_dentisalud.citas
+    UPDATE Gestion_citas_dentisalud.citas
     SET estado_progreso = p_nuevo_estado
     WHERE id_cita_pk = p_id_cita;
 END //
 DELIMITER ;
+
+-- CALL sp_cambiar_estado_cita(1, 'Atendido');
+
+/* Stored Procedure: sp_buscar_paciente, el siguiente sp permite buscar a un paciente por numero de documento, si el documento no existe indicara un error.
+   Las tablas interviniestes son: pacientes.
+ */
 
 DROP PROCEDURE IF EXISTS sp_buscar_paciente;
 DELIMITER //
@@ -65,18 +78,20 @@ CREATE PROCEDURE sp_buscar_paciente(
 BEGIN
     DECLARE paciente_encontrado INT;
     
+    -- Verificar si el paciente existe
     SELECT COUNT(*) INTO paciente_encontrado
-    FROM gestion_citas_dentisalud.pacientes
+    FROM Gestion_citas_dentisalud.pacientes
     WHERE nro_documento = p_nro_documento;
     
     IF paciente_encontrado = 0 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: <<PACIENTE NO EXISTE>>.';
        ELSE
         SELECT *
-        FROM gestion_citas_dentisalud.pacientes
+        FROM Gestion_citas_dentisalud.pacientes
         WHERE nro_documento = p_nro_documento;
     END IF;
 END//
 DELIMITER ;
 
+-- CALL sp_buscar_paciente('12345678');
 
