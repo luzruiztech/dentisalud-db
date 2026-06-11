@@ -5,3 +5,6 @@
 *_original.sql
 *_clean.sql
 *.bak
+
+# Backups generados (se respaldan en S3, no en Git)
+backups/*.sql

@@ -17,7 +17,7 @@ DATABASE_POPULATION=./structure/population.sql
 FILES := $(wildcard ./objects/*.sql)
 
 
-.PHONY: all up objects clean
+.PHONY: all up objects test-db access-db clean-db backup-db
 
 all: up objects
 
@@ -60,3 +60,9 @@ clean-db:
 	docker exec -it mysql mysql -u root -p$(PASSWORD) --host $(HOST) --port $(PORT) -e "DROP DATABASE IF EXISTS $(DATABASE_NAME);"
 	@echo "Bye"
 	docker compose -f $(DOCKER_COMPOSE_FILE) down
+
+backup-db:
+	@echo "Generando backup de la base de datos..."
+	@mkdir -p backups
+	docker exec mysql mysqldump -u root -p$(PASSWORD) --databases $(DATABASE) --routines --triggers --single-transaction --set-gtid-purged=OFF > backups/backup_$(shell date +%Y%m%d_%H%M%S).sql
+	@echo "Backup creado correctamente en la carpeta backups/"
