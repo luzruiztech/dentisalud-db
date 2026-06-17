@@ -93,8 +93,8 @@ El sistema gestiona **8 entidades principales** relacionadas entre sí:
 
 ```bash
 # 1. Clonar el repositorio
-git clone https://github.com/Luz-88/Proyecto-Final-CoderHouse_Luz_Ruiz.git
-cd Proyecto-Final-CoderHouse_Luz_Ruiz
+git clone https://github.com/luzruiztech/dentisalud-db.git
+cd cd dentisalud-db
 
 # 2. Levantar el entorno (MySQL en Docker)
 make
@@ -110,6 +110,141 @@ make clean-db      # Limpiar la base de datos
 ---
 
 ## Estructura del repositorio
+
+## ☁️ Despliegue en AWS
+
+Además del entorno local, DentiSalud se despliega en **AWS** sobre una instancia EC2, con backups automatizados hacia S3 y un esquema de seguridad **sin credenciales almacenadas en el servidor**, usando un IAM role.
+
+### Arquitectura cloud
+
+| Servicio | Uso |
+|---|---|
+| **EC2** (t3.micro, Amazon Linux 2023) | Servidor que ejecuta MySQL en Docker |
+| **S3** (bucket privado, SSE-S3) | Almacenamiento de backups de la base de datos |
+| **IAM Role** | Credenciales temporales para que la EC2 escriba en S3 sin claves en disco |
+
+```
+┌──────────────────────────────┐
+│           EC2 (us-east-1)     │
+│  ┌────────────────────────┐   │
+│  │  Docker → MySQL        │   │        ┌──────────────────────────┐
+│  │  Makefile (backup-db)  │   │        │  S3 Bucket (privado)     │
+│  └────────────────────────┘   │        │  SSE-S3 · Block Public   │
+│            │ mysqldump          │        │  Access                  │
+│            ▼                    │  cp    │                          │
+│      backups/*.sql ─────────────┼───────▶│  backup_AAAAMMDD_*.sql   │
+│                                 │        └──────────────────────────┘
+│   IAM Role: DentiSaludBackupRole│              ▲
+│   (credenciales temporales) ────┼──────────────┘
+└──────────────────────────────┘   least privilege: s3:PutObject + s3:ListBucket
+```
+
+### 1. Provisión de la instancia EC2
+
+| Parámetro | Valor |
+|---|---|
+| Tipo de instancia | `t3.micro` |
+| AMI | Amazon Linux 2023 |
+| Región | `us-east-1` |
+| Security Group | Puerto 22 (SSH) restringido a *My IP* |
+| Acceso | Key pair (`.pem`) vía SSH |
+
+```bash
+# Conexión por SSH (la IP pública cambia en cada reinicio si no se asigna Elastic IP)
+ssh -i ~/.ssh/dentisalud-key.pem ec2-user@<IP_PUBLICA_EC2>
+```
+
+> **Nota:** sin Elastic IP, la IP pública de la instancia cambia al reiniciar. Si el SSH da `Connection timed out`, actualizar la regla del Security Group con la IP actual (*My IP*).
+
+### 2. Despliegue de la base en la EC2
+
+```bash
+# Instalar Docker, Docker Compose plugin, Make y Git en la instancia
+# (en Amazon Linux 2023 el plugin de Compose se instala manualmente)
+
+# Clonar el repositorio
+git clone https://github.com/luzruiztech/dentisalud-db.git
+cd dentisalud-db
+
+# Levantar MySQL en Docker (los datos persisten entre reinicios)
+docker compose up -d
+
+# Cargar estructura, objetos y datos
+make
+```
+
+### 3. Backups automatizados a S3 (seguridad sin credenciales)
+
+El punto central del despliegue: en lugar de guardar un *access key* / *secret key* dentro del servidor —lo que sería un riesgo de seguridad—, la EC2 obtiene **credenciales temporales que rotan automáticamente** mediante un **IAM role** asignado a la instancia. El servidor nunca almacena un secreto en disco.
+
+#### Política IAM con permiso mínimo (least privilege)
+
+La política otorga **solo** lo necesario: escribir objetos y listar el bucket de backups, y nada más.
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ListarBucketBackups",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::dentisalud-backups-luzruiz-2026"
+    },
+    {
+      "Sid": "EscribirBackups",
+      "Effect": "Allow",
+      "Action": "s3:PutObject",
+      "Resource": "arn:aws:s3:::dentisalud-backups-luzruiz-2026/*"
+    }
+  ]
+}
+```
+
+> **Detalle de diseño:** son dos ARN distintos a propósito. `s3:ListBucket` apunta al bucket en sí (sin `/*`) y habilita el `aws s3 ls`; `s3:PutObject` apunta a los objetos dentro del bucket (con `/*`) y habilita la subida. No se usa `s3:*` ni `Resource: "*"`.
+
+#### Configuración del bucket S3
+
+| Configuración | Valor |
+|---|---|
+| Nombre | `dentisalud-backups-luzruiz-2026` |
+| Región | `us-east-1` |
+| Block Public Access | Activado (bucket privado) |
+| Cifrado | SSE-S3 (AES-256) |
+
+#### Flujo de backup
+
+```bash
+# 1. Verificar que la EC2 está usando el IAM role (no claves estáticas)
+aws sts get-caller-identity
+# El ARN devuelto contiene "assumed-role/DentiSaludBackupRole/..."
+
+# 2. Generar el backup (mysqldump con --single-transaction y --set-gtid-purged=OFF)
+make backup-db
+
+# 3. Subir el backup al bucket
+aws s3 cp backups/backup_AAAAMMDD_HHMMSS.sql s3://dentisalud-backups-luzruiz-2026/
+
+# 4. Verificar que el objeto llegó al bucket
+aws s3 ls s3://dentisalud-backups-luzruiz-2026/
+```
+
+> Como el bucket usa **SSE-S3** (no KMS), el `PutObject` no requiere permisos adicionales de `kms:GenerateDataKey`. Si se usara SSE-KMS, la política debería incluir ese permiso o el upload fallaría con `AccessDenied`.
+
+### Documentación visual
+
+Las capturas del despliegue se encuentran en [`docs/`](./docs):
+
+| Captura | Qué demuestra |
+|---|---|
+| Instancia EC2 en ejecución | Servidor aprovisionado y corriendo |
+| Política IAM (JSON) | Permisos de least privilege (los dos ARN) |
+| IAM role adjunto a la EC2 | Asociación rol ↔ instancia (pestaña Seguridad) |
+| `aws sts get-caller-identity` | La EC2 actúa con `assumed-role` (sin claves) |
+| Objeto `.sql` en el bucket S3 | Backup subido y cifrado con SSE-S3 |
+
+---
+
 
 ```
 ├── structure/          # Scripts DDL: creación de tablas y relaciones
