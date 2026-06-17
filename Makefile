@@ -31,14 +31,14 @@ up:
 
 
 	@echo "Create the import and run de script"
-	docker exec -it mysql mysql -u root -p$(PASSWORD) -e "source $(DATABASE_CREATION);"
-	docker exec -it mysql mysql -u root -p$(PASSWORD) --local-infile=1 -e "source $(DATABASE_POPULATION)"
+	docker exec -i mysql mysql -u root -p$(PASSWORD) < $(DATABASE_CREATION)
+	docker exec -i mysql mysql -u root -p$(PASSWORD) --local-infile=1 < $(DATABASE_POPULATION)
 
 objects:
 	@echo "Create objects in database"
 	@for file in $(FILES); do \
 	    echo "Process $$file and add to the database: $(DATABASE_NAME)"; \
-	docker exec -it mysql  mysql -u root -p$(PASSWORD) -e "source $$file"; \
+	docker exec -i mysql  mysql -u root -p$(PASSWORD) < $$file; \
 	done
 
 test-db:
