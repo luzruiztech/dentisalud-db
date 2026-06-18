@@ -17,7 +17,7 @@ El proyecto cubre el ciclo completo de diseño e implementación de una base de 
 - Creación de estructura de tablas normalizadas
 - Implementación de lógica de negocio con objetos SQL avanzados
 - Sistema de roles y permisos por perfil de usuario
-- Automatización con scripts de backup y administración
+- Scripts de backup y administración
 
 ---
 
@@ -30,6 +30,7 @@ El proyecto cubre el ciclo completo de diseño e implementación de una base de 
 | **Docker + Docker Compose** | Entorno reproducible y portátil |
 | **Makefile** | Automatización de tareas de administración |
 | **Shell scripting** | Scripts de inicialización y backup |
+| **AWS (EC2, S3, IAM)** | Despliegue en la nube y backups |
 | **GitHub** | Control de versiones y documentación |
 
 ---
@@ -94,7 +95,7 @@ El sistema gestiona **8 entidades principales** relacionadas entre sí:
 ```bash
 # 1. Clonar el repositorio
 git clone https://github.com/luzruiztech/dentisalud-db.git
-cd cd dentisalud-db
+cd dentisalud-db
 
 # 2. Levantar el entorno (MySQL en Docker)
 make
@@ -109,11 +110,9 @@ make clean-db      # Limpiar la base de datos
 
 ---
 
-## Estructura del repositorio
-
 ## Despliegue en AWS
 
-Además del entorno local, DentiSalud se despliega en **AWS** sobre una instancia EC2, con backups automatizados hacia S3 y un esquema de seguridad **sin credenciales almacenadas en el servidor**, usando un IAM role.
+Además del entorno local, DentiSalud se despliega en **AWS** sobre una instancia EC2, con backups hacia S3 y un esquema de seguridad **sin credenciales almacenadas en el servidor**, usando un IAM role.
 
 ### Arquitectura cloud
 
@@ -173,7 +172,7 @@ docker compose up -d
 make
 ```
 
-### 3. Backups automatizados a S3 (seguridad sin credenciales)
+### 3. Backups a S3 (seguridad sin credenciales)
 
 El punto central del despliegue: en lugar de guardar un *access key* / *secret key* dentro del servidor —lo que sería un riesgo de seguridad—, la EC2 obtiene **credenciales temporales que rotan automáticamente** mediante un **IAM role** asignado a la instancia. El servidor nunca almacena un secreto en disco.
 
@@ -233,27 +232,57 @@ aws s3 ls s3://dentisalud-backups-luzruiz-2026/
 
 ### Documentación visual
 
-Las capturas del despliegue se encuentran en [`docs/`](./docs):
+**Infraestructura EC2**
 
-| Captura | Qué demuestra |
-|---|---|
-| Instancia EC2 en ejecución | Servidor aprovisionado y corriendo |
-| Política IAM (JSON) | Permisos de least privilege (los dos ARN) |
-| IAM role adjunto a la EC2 | Asociación rol ↔ instancia (pestaña Seguridad) |
-| `aws sts get-caller-identity` | La EC2 actúa con `assumed-role` (sin claves) |
-| Objeto `.sql` en el bucket S3 | Backup subido y cifrado con SSE-S3 |
+![Instancia EC2 en ejecución](docs/01-ec2-instancia-running.png)
+*Instancia `t3.micro` en ejecución con Security Group restringiendo SSH al puerto 22.*
+
+![Detalles de la instancia](docs/02-ec2-detalles.png)
+*AMI Amazon Linux 2023, key pair y specs de la instancia.*
+
+![Conexión SSH](docs/03-ssh-conexion.png)
+*Acceso por SSH a la instancia.*
+
+**Seguridad: IAM con least privilege**
+
+![Política IAM](docs/04-iam-policy-least-privilege.png)
+*Política con permiso mínimo: solo `s3:PutObject` y `s3:ListBucket` sobre el bucket de backups.*
+
+![Rol IAM](docs/05-iam-role.png)
+*Rol `DentiSaludBackupRole` con la política adjunta, asumido por la EC2 sin credenciales en disco.*
+
+**Backups en S3**
+
+![Bucket S3](docs/06-s3-bucket.png)
+*Bucket privado en `us-east-1`.*
+
+![Backup subido a S3](docs/07-s3-backup-subido.png)
+*Archivo de backup almacenado en S3 con cifrado SSE-S3.*
+
+**Flujo de trabajo: backups y versionado**
+
+![Generación del backup](docs/08-make-backup.png)
+*Generación del dump con `make backup-db` en la instancia EC2.*
+
+![Fix del Makefile y commit](docs/09-git-diff-commit.png)
+*Corrección de la sintaxis de ejecución de SQL (`source` → redirección `<`) y commit del cambio.*
+
+![Push a GitHub](docs/10-git-push.png)
+*Versionado del proyecto en GitHub.*
 
 ---
 
+## Estructura del repositorio
 
 ```
 ├── structure/          # Scripts DDL: creación de tablas y relaciones
 ├── objects/            # Scripts de vistas, funciones, SPs y triggers
-├── backups/            # Backups generados automáticamente
+├── backups/            # Backups de la base de datos
+├── docs/               # Capturas del despliegue en AWS
 ├── docker-compose.yml  # Configuración del entorno Docker
 ├── Makefile            # Automatización de tareas de administración
 ├── wait_docker.sh      # Script de inicialización del contenedor
-└── .env                # Variables de entorno (credenciales locales)
+└── .env                # Variables de entorno (credenciales locales, no versionado)
 ```
 
 ---
@@ -266,6 +295,7 @@ Este proyecto fue diseñado pensando en los desafíos reales de un sistema de sa
 - **Auditoría:** el trigger de auditoría de agendas permite rastrear cambios de estado en el tiempo, un requisito común en entornos regulados
 - **Separación de roles:** el modelo de usuarios simula un entorno de producción real con acceso diferenciado por perfil (admisión, profesional, administrador)
 - **Portabilidad:** Docker permite que cualquier desarrollador levante el entorno sin configuración manual del motor
+- **Seguridad en la nube:** el uso de un IAM role con permisos mínimos evita almacenar credenciales en el servidor, aplicando el principio de *least privilege*
 
 ---
 
@@ -278,4 +308,8 @@ Analista IT con más de 6 años de experiencia en soporte de sistemas de salud (
 
 ---
 
-*Proyecto desarrollado como entrega final del curso SQL en Coderhouse — Comisión 53180*
+*---
+
+## Sobre este proyecto:
+DentiSalud nació como proyecto final del curso de SQL, pero la capa de despliegue en AWS (EC2, S3 e IAM) surge de mi formación en cursos de cloud computing. 
+Quise unir ambas preparaciones en un mismo proyecto: tomar una base de datos y llevarla a la nube aplicando buenas prácticas de infraestructura y seguridad. Más que un ejercicio aislado, es la integración práctica de lo aprendido.*
