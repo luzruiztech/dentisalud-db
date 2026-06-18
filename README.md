@@ -233,15 +233,32 @@ aws s3 ls s3://dentisalud-backups-luzruiz-2026/
 
 ### Documentación visual
 
-Las capturas del despliegue se encuentran en [`docs/`](./docs):
+**Infraestructura EC2**
 
-| Captura | Qué demuestra |
-|---|---|
-| Instancia EC2 en ejecución | Servidor aprovisionado y corriendo |
-| Política IAM (JSON) | Permisos de least privilege (los dos ARN) |
-| IAM role adjunto a la EC2 | Asociación rol ↔ instancia (pestaña Seguridad) |
-| `aws sts get-caller-identity` | La EC2 actúa con `assumed-role` (sin claves) |
-| Objeto `.sql` en el bucket S3 | Backup subido y cifrado con SSE-S3 |
+![Instancia EC2 en ejecución](docs/01-ec2-instancia-running.png)
+*Instancia `t3.micro` en ejecución con Security Group restringiendo SSH al puerto 22.*
+
+![Detalles de la instancia](docs/02-ec2-detalles.png)
+*AMI Amazon Linux 2023, key pair y specs de la instancia.*
+
+![Conexión SSH](docs/03-ssh-conexion.png)
+*Acceso por SSH a la instancia.*
+
+**Seguridad: IAM con least privilege**
+
+![Política IAM](docs/04-iam-policy-least-privilege.png)
+*Política con permiso mínimo: solo `s3:PutObject` y `s3:ListBucket` sobre el bucket de backups.*
+
+![Rol IAM](docs/05-iam-role.png)
+*Rol `DentiSaludBackupRole` con la política adjunta, asumido por la EC2 sin credenciales en disco.*
+
+**Backups en S3**
+
+![Bucket S3](docs/06-s3-bucket.png)
+*Bucket privado en `us-east-1`.*
+
+![Backup subido a S3](docs/07-s3-backup-subido.png)
+*Archivo de backup almacenado en S3 con cifrado SSE-S3.*
 
 ---
 
