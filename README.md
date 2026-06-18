@@ -17,7 +17,7 @@ El proyecto cubre el ciclo completo de diseño e implementación de una base de 
 - Creación de estructura de tablas normalizadas
 - Implementación de lógica de negocio con objetos SQL avanzados
 - Sistema de roles y permisos por perfil de usuario
-- Automatización con scripts de backup y administración
+- Scripts de backup y administración
 
 ---
 
@@ -30,6 +30,7 @@ El proyecto cubre el ciclo completo de diseño e implementación de una base de 
 | **Docker + Docker Compose** | Entorno reproducible y portátil |
 | **Makefile** | Automatización de tareas de administración |
 | **Shell scripting** | Scripts de inicialización y backup |
+| **AWS (EC2, S3, IAM)** | Despliegue en la nube y backups |
 | **GitHub** | Control de versiones y documentación |
 
 ---
@@ -51,7 +52,7 @@ El sistema gestiona **8 entidades principales** relacionadas entre sí:
 
 ---
 
-## ⚙️ Objetos SQL implementados
+## Objetos SQL implementados
 
 ### Vistas
 - **`vista_citas_atendidas`** — Lista de citas por paciente ordenadas cronológicamente, con profesional asignado
@@ -94,7 +95,7 @@ El sistema gestiona **8 entidades principales** relacionadas entre sí:
 ```bash
 # 1. Clonar el repositorio
 git clone https://github.com/luzruiztech/dentisalud-db.git
-cd cd dentisalud-db
+cd dentisalud-db
 
 # 2. Levantar el entorno (MySQL en Docker)
 make
@@ -109,11 +110,9 @@ make clean-db      # Limpiar la base de datos
 
 ---
 
-## Estructura del repositorio
+## Despliegue en AWS
 
-## ☁️ Despliegue en AWS
-
-Además del entorno local, DentiSalud se despliega en **AWS** sobre una instancia EC2, con backups automatizados hacia S3 y un esquema de seguridad **sin credenciales almacenadas en el servidor**, usando un IAM role.
+Además del entorno local, DentiSalud se despliega en **AWS** sobre una instancia EC2, con backups hacia S3 y un esquema de seguridad **sin credenciales almacenadas en el servidor**, usando un IAM role.
 
 ### Arquitectura cloud
 
@@ -173,7 +172,7 @@ docker compose up -d
 make
 ```
 
-### 3. Backups automatizados a S3 (seguridad sin credenciales)
+### 3. Backups a S3 (seguridad sin credenciales)
 
 El punto central del despliegue: en lugar de guardar un *access key* / *secret key* dentro del servidor —lo que sería un riesgo de seguridad—, la EC2 obtiene **credenciales temporales que rotan automáticamente** mediante un **IAM role** asignado a la instancia. El servidor nunca almacena un secreto en disco.
 
@@ -260,17 +259,30 @@ aws s3 ls s3://dentisalud-backups-luzruiz-2026/
 ![Backup subido a S3](docs/07-s3-backup-subido.png)
 *Archivo de backup almacenado en S3 con cifrado SSE-S3.*
 
+**Flujo de trabajo: backups y versionado**
+
+![Generación del backup](docs/08-make-backup.png)
+*Generación del dump con `make backup-db` en la instancia EC2.*
+
+![Fix del Makefile y commit](docs/09-git-diff-commit.png)
+*Corrección de la sintaxis de ejecución de SQL (`source` → redirección `<`) y commit del cambio.*
+
+![Push a GitHub](docs/10-git-push.png)
+*Versionado del proyecto en GitHub.*
+
 ---
 
+## Estructura del repositorio
 
 ```
 ├── structure/          # Scripts DDL: creación de tablas y relaciones
 ├── objects/            # Scripts de vistas, funciones, SPs y triggers
-├── backups/            # Backups generados automáticamente
+├── backups/            # Backups de la base de datos
+├── docs/               # Capturas del despliegue en AWS
 ├── docker-compose.yml  # Configuración del entorno Docker
 ├── Makefile            # Automatización de tareas de administración
 ├── wait_docker.sh      # Script de inicialización del contenedor
-└── .env                # Variables de entorno (credenciales locales)
+└── .env                # Variables de entorno (credenciales locales, no versionado)
 ```
 
 ---
@@ -283,6 +295,7 @@ Este proyecto fue diseñado pensando en los desafíos reales de un sistema de sa
 - **Auditoría:** el trigger de auditoría de agendas permite rastrear cambios de estado en el tiempo, un requisito común en entornos regulados
 - **Separación de roles:** el modelo de usuarios simula un entorno de producción real con acceso diferenciado por perfil (admisión, profesional, administrador)
 - **Portabilidad:** Docker permite que cualquier desarrollador levante el entorno sin configuración manual del motor
+- **Seguridad en la nube:** el uso de un IAM role con permisos mínimos evita almacenar credenciales en el servidor, aplicando el principio de *least privilege*
 
 ---
 
@@ -291,8 +304,10 @@ Este proyecto fue diseñado pensando en los desafíos reales de un sistema de sa
 **Luz Emily Ruiz Neiva**
 Analista IT con más de 6 años de experiencia en soporte de sistemas de salud (HIS/ERP), bases de datos (SQL Server, Oracle) e integraciones HL7. Actualmente en transición hacia roles de Cloud Support Engineer con foco en AWS.
 
-🔗 [LinkedIn](https://www.linkedin.com/in/luzruizn)
+[LinkedIn](https://www.linkedin.com/in/luzruizn)
 
 ---
 
-*Proyecto desarrollado como entrega final del curso SQL en Coderhouse — Comisión 53180*
+## Sobre este proyecto:
+DentiSalud nació como proyecto final del curso de SQL, pero la capa de despliegue en AWS (EC2, S3 e IAM) surge de mi formación en cursos de cloud computing. 
+Quise unir ambas preparaciones en un mismo proyecto: tomar una base de datos y llevarla a la nube aplicando buenas prácticas de infraestructura y seguridad. Más que un ejercicio aislado, es la integración práctica de lo aprendido.
