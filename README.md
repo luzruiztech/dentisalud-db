@@ -51,7 +51,7 @@ El sistema gestiona **8 entidades principales** relacionadas entre sí:
 
 ---
 
-## ⚙️ Objetos SQL implementados
+## Objetos SQL implementados
 
 ### Vistas
 - **`vista_citas_atendidas`** — Lista de citas por paciente ordenadas cronológicamente, con profesional asignado
@@ -111,7 +111,7 @@ make clean-db      # Limpiar la base de datos
 
 ## Estructura del repositorio
 
-## ☁️ Despliegue en AWS
+## Despliegue en AWS
 
 Además del entorno local, DentiSalud se despliega en **AWS** sobre una instancia EC2, con backups automatizados hacia S3 y un esquema de seguridad **sin credenciales almacenadas en el servidor**, usando un IAM role.
 
